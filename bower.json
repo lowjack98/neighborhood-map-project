@@ -19,6 +19,7 @@
   ],
   "dependencies": {
     "knockout": "~3.4.0",
-    "bootstrap": "~3.3.6"
+    "bootstrap": "~3.3.6",
+    "Ionicons": "ionicons#~2.0.1"
   }
 }
