@@ -58,7 +58,7 @@
           <button onclick="getCenter();">Go</button>
           <h4>Ice Cream Shops <i class="ionicons ion-icecream"></i></h4>
           <ul data-bind="foreach: filteredLocations">
-            <li data-bind="click: $parent.getLocDetails">
+            <li data-bind="click: $parent.getLocDetails, css: { activelistitem: isActive() }">
               <span data-bind="text: name"></span>
             </li>
           </ul>

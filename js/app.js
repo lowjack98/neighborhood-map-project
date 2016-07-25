@@ -11,6 +11,7 @@ var AppViewModel = function(jsonData) {
   self.Location = function(loc) {
     this.name = ko.observable(loc.name);
     this.id = ko.observable(loc.id);
+    this.isActive = ko.observable(false);
     this.place_id = ko.observable(loc.place_id);
     this.lat = ko.observable(loc.geometry.location.lat);
     this.lng = ko.observable(loc.geometry.location.lng);
@@ -34,10 +35,19 @@ var AppViewModel = function(jsonData) {
   }, self);
 
   self.getLocDetails = function(loc){
+    for (var i = 0; i < self.creameryLocations().length; i++) {
+      if(self.creameryLocations()[i].place_id() == loc.place_id()){
+        self.creameryLocations()[i].isActive(true);
+      } else {
+        self.creameryLocations()[i].isActive(false);
+      }
+    }
     //myObservableArray.splice(1, 3)
     //self.creameryLocations.remove(loc);
-    console.log("sending to refreshMarkers");
-    refreshMarkers(self.filteredLocations());
+    console.log(loc);
+    activeMarker(loc.place_id());
+
+    loc.isActive(true);
   };
 
   self.filteredLocations.subscribe(function (newData) {
@@ -64,23 +74,23 @@ function initMap() {
   });
 }
 //console.log(myViewModel.creameryLocations());
-function initMarkers(arrMarkers) {
-
-  var icon = {
-    path: "bower_components/Ionicons/src/icecream.svg",
-    fillColor: '#FF0000',
-    fillOpacity: .6,
-    anchor: new google.maps.Point(0,0),
-    strokeWeight: 0,
-    scale: .1
+function activeMarker(place_id) {
+  for (var i = 0; i < markers.length; i++) {
+    if(markers[i].place_id == place_id){
+      markers[i].setAnimation(google.maps.Animation.BOUNCE);
+    } else {
+      markers[i].setAnimation();
+    }
   }
+}
 
+function initMarkers(arrMarkers) {
   $.each( arrMarkers, function( key, value ) {
     var marker = new google.maps.Marker({
       position: {lat: value.lat(), lng: value.lng()},
       map: map,
       place_id: value.place_id(),
-      icon: icon,
+      //icon: icon,
       title: value.name()
     });
     markers.push(marker);

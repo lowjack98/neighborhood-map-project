@@ -98,3 +98,7 @@ body {
   display: inline-block;
   border-radius: 50%;
 }
+
+.active-loc {
+  background-color: yellow;
+}
