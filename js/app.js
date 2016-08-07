@@ -54,6 +54,32 @@ var AppViewModel = function(jsonData) {
     refreshMarkers(self.filteredLocations());
     console.log("subscribe ran");
   });
+
+  // Modal code.
+  var firstTemplateData = {
+    text: 'First template',
+    label: ko.observable('Observable label')
+  };
+
+  self.modalVisible = ko.observable(false);
+
+  self.show = function() {
+    self.modalVisible(true);
+  };
+
+  self.headerLabel = ko.observable('Some header text');
+  self.bodyTemplate = ko.observable('firstModalTemplate');
+  self.bodyData = ko.observable('firstTemplateData');
+
+  self.okText = ko.observable();
+
+  self.switchTemplates = function() {
+    self.bodyTemplate() === 'firstModalTemplate'
+      ? self.bodyTemplate('secondModalTemplate')
+      : self.bodyTemplate('firstModalTemplate');
+  };
+
+  self.modalSize = ko.observable('modal-lg');
 }
 
 var map;
@@ -92,6 +118,11 @@ function initMarkers(arrMarkers) {
       place_id: value.place_id(),
       //icon: icon,
       title: value.name()
+    });
+    marker.addListener('click', function() {
+      console.log(marker);
+      //map.setZoom(8);
+      //map.setCenter(marker.getPosition());
     });
     markers.push(marker);
   });
