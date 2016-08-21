@@ -141,7 +141,8 @@ var myViewModel;
 //   activates the app view modal, and creates the map and required markers.
 function initMap() {
   // Constructor creates a new map - only center and zoom are required.
-  var places = $.getJSON( "http://lowjack98.github.io/data/places.json?")
+  //var places = $.getJSON( "http://lowjack98.github.io/data/places.json?")
+  var places = $.getJSON( "data/places.json?")
   .done(function(jsonData) {
     //initialize VM with json location data
     myViewModel = new AppViewModel(jsonData);

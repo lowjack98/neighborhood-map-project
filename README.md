@@ -11,3 +11,5 @@ This website requires bower to install all dependencies. please see https://bowe
 Once bower is installed:
 
 1. Run `bower update`
+
+If you are running the code on your localhost, you will need to either run a local http server or move the `places.json` to a hosted site. Then update line 145 in `app.js` with the url for it's new location. 
