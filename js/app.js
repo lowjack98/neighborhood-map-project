@@ -1,13 +1,29 @@
-//Google PLaces: https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=33.0039673,-97.2257894&keyword=ice+cream&key=AIzaSyCXw_dyrr3o4e2Y_B1yCFiYTLSRQAdxqcQ&v=3
-
-
+// YELP API LOGIN CREDS
+YELP_KEY = "Xb1L_N6TPqB0IbTz4PBOPQ";
+YELP_KEY_SECRET = "oj3VMxvqxLCCxRB3GC8kTjAfJyY";
+YELP_TOKEN = "f_TkmMrVVMu6ZiLcge6N76cUIIoHq4SY";
+YELP_TOKEN_SECRET = "GAn-td0aHCHuypLG20wUNotaVaE";
 
 var AppViewModel = function(jsonData) {
 
   var self = this;
+  //observable variable that controls the filer text
   self.filterLocs = ko.observable("");
+  //master array of locations
   self.creameryLocations = ko.observableArray([]);
+  //observable shows/hides the list of filtered locations when screen has collapsed
+  self.showShopList = ko.observable(true);
+  //function to toggle showShopList
+  self.toggleShowShopList = function() {
+    console.log(self.showShopList());
+    if(self.showShopList()) {
+      self.showShopList(false);
+    } else {
+      self.showShopList(true);
+    }
+  }
 
+  //This function builds required observables for each location in the creameryLocations array
   self.Location = function(loc) {
     this.name = ko.observable(loc.name);
     this.id = ko.observable(loc.id);
@@ -16,24 +32,75 @@ var AppViewModel = function(jsonData) {
     this.lat = ko.observable(loc.geometry.location.lat);
     this.lng = ko.observable(loc.geometry.location.lng);
     this.icon = ko.observable(loc.icon);
+    this.yelp_id = ko.observable(loc.yelp_id);
+  };
+
+  //This function builds required observables for the yelp details modal
+  self.modalData = {
+    text: 'First template',
+    label: ko.observable('Observable label'),
+    rating: ko.observable(),
+    review_count: ko.observable(),
+    mobile_url: ko.observable(),
+    rating_img_url: ko.observable(),
+    name: ko.observable(),
+    rating_img_url_small: ko.observable(),
+    url: ko.observable(),
+    snippet_text: ko.observable(),
+    image_url: ko.observable(),
+    snippet_image_url: ko.observable(),
+    display_phone: ko.observable(),
+    rating_img_url_large: ko.observable(),
+    address: ko.observable()
+  };
+
+  //This function updates the yelp details modal
+  self.updateModalData = function(loc) {
+    console.log('updating modalData');
+    console.log(loc);
+    var md = self.modalData;
+    md.text = 'First template';
+    md.label('Observable label');
+    md.rating(loc.yelpData.rating);
+    md.review_count(loc.yelpData.review_count);
+    md.rating_img_url(loc.yelpData.rating_img_url);
+    md.name(loc.name());
+    md.url(loc.yelpData.url);
+    md.snippet_text(loc.yelpData.snippet_text);
+    md.image_url(loc.yelpData.image_url);
+    md.snippet_image_url(loc.yelpData.snippet_image_url);
+    md.display_phone(loc.yelpData.display_phone);
+    md.rating_img_url_large(loc.yelpData.rating_img_url_large);
+    md.address(loc.yelpData.location.display_address);
   }
 
+  //This function builds an array of hardcoded locations from places.json
   self.mappedLocations = ko.utils.arrayMap(jsonData.results, function(loc) {
     return new self.Location(loc);
   });
+  //Then the array is made observable here.
   self.creameryLocations(self.mappedLocations);
-
+  //This is the list of creameries after the filter has been applied. this is the list that is displayed to the user
   self.filteredLocations = ko.computed(function() {
     var filterLocs = self.filterLocs().toLowerCase();
     if (!filterLocs) {
-        return self.creameryLocations();
+      return self.creameryLocations();
     } else {
-        return ko.utils.arrayFilter(self.creameryLocations(), function(loc) {
-            return loc.name().toLowerCase().includes(filterLocs);
-        });
+      return ko.utils.arrayFilter(self.creameryLocations(), function(loc) {
+        return loc.name().toLowerCase().includes(filterLocs);
+      });
     }
   }, self);
-
+  //function returns all of the observable variables for a specific location when given a place_id
+  self.getLocByPlaceId = function(place_id){
+    for (var i = 0; i < self.creameryLocations().length; i++) {
+      if(self.creameryLocations()[i].place_id() == place_id){
+        return self.creameryLocations()[i];
+      }
+    }
+  };
+  //This function is called when a user clicks on the list element or the marker on the map
+  //It sets the correct marker to animate then retrieves the yelp data for the selected location and activates the yelp modal
   self.getLocDetails = function(loc){
     for (var i = 0; i < self.creameryLocations().length; i++) {
       if(self.creameryLocations()[i].place_id() == loc.place_id()){
@@ -42,64 +109,61 @@ var AppViewModel = function(jsonData) {
         self.creameryLocations()[i].isActive(false);
       }
     }
-    //myObservableArray.splice(1, 3)
-    //self.creameryLocations.remove(loc);
-    console.log(loc);
     activeMarker(loc.place_id());
 
     loc.isActive(true);
+    var yelpData = getYelpBusinessInfo(loc.yelp_id());
+    yelpData.done(function(results){
+      loc.yelpData = results;
+      self.updateModalData(loc);
+      self.modalVisible(true);
+    })
+    yelpData.fail(function(results){
+      alert("Unable to retrieve Yelp data. Please check your network connection and retry later.");
+    });
   };
-
+  // This looks for a change in the filtered location list and updates the google maps markers as needed
   self.filteredLocations.subscribe(function (newData) {
     refreshMarkers(self.filteredLocations());
-    console.log("subscribe ran");
   });
-
-  // Modal code.
-  var firstTemplateData = {
-    text: 'First template',
-    label: ko.observable('Observable label')
-  };
-
+  //this is an observable variable to control the display of the yelp modal.
   self.modalVisible = ko.observable(false);
-
+  //this function makes the modal visible.
   self.show = function() {
     self.modalVisible(true);
   };
 
-  self.headerLabel = ko.observable('Some header text');
-  self.bodyTemplate = ko.observable('firstModalTemplate');
-  self.bodyData = ko.observable('firstTemplateData');
-
-  self.okText = ko.observable();
-
-  self.switchTemplates = function() {
-    self.bodyTemplate() === 'firstModalTemplate'
-      ? self.bodyTemplate('secondModalTemplate')
-      : self.bodyTemplate('firstModalTemplate');
-  };
-
-  self.modalSize = ko.observable('modal-lg');
 }
 
+//Below are defined due to async loading.
 var map;
 var markers = [];
+var myViewModel;
 
+// This function runs once the google maps api has completed loading.
+// It retrieves the hardcoded locations from places.json,
+//   activates the app view modal, and creates the map and required markers.
 function initMap() {
   // Constructor creates a new map - only center and zoom are required.
-  $.getJSON("http://lowjack98.github.io/data/places.json?", function(jsonData) {
-    var myViewModel = new AppViewModel(jsonData);
+  var places = $.getJSON( "http://lowjack98.github.io/data/places.json?")
+  .done(function(jsonData) {
+    myViewModel = new AppViewModel(jsonData);
     ko.applyBindings(myViewModel);
-    console.log('myViewModel');
-    console.log(myViewModel.creameryLocations());
     map = new google.maps.Map(document.getElementById('map'), {
       center: {lat: 33.0039673, lng: -97.2257894},
       zoom: 11
     });
+    //var largeInfowindow = new google.maps.InfoWindow();
+    //initMarkers(myViewModel.creameryLocations(), largeInfowindow);
     initMarkers(myViewModel.creameryLocations());
+  })
+  .fail(function(error) {
+    alert("Unable to retrieve the list of ice cream shops. Please check your network connection and try again later.")
+    console.log('error getting places.json');
+    console.log(error);
   });
 }
-//console.log(myViewModel.creameryLocations());
+// This function loops thru the markers array and sets the correct marker to animate/bounce
 function activeMarker(place_id) {
   for (var i = 0; i < markers.length; i++) {
     if(markers[i].place_id == place_id){
@@ -109,20 +173,21 @@ function activeMarker(place_id) {
     }
   }
 }
-
+// This function loops thru the markers array and sets the correct marker to animate/bounce
+//function initMarkers(arrMarkers, infoWindow) {
 function initMarkers(arrMarkers) {
   $.each( arrMarkers, function( key, value ) {
     var marker = new google.maps.Marker({
       position: {lat: value.lat(), lng: value.lng()},
       map: map,
       place_id: value.place_id(),
-      //icon: icon,
+      cat_icon: value.icon(),
       title: value.name()
     });
     marker.addListener('click', function() {
-      console.log(marker);
-      //map.setZoom(8);
-      //map.setCenter(marker.getPosition());
+      map.setCenter(this.getPosition());
+      var loc = myViewModel.getLocByPlaceId(this.place_id)
+      myViewModel.getLocDetails(loc);
     });
     markers.push(marker);
   });
@@ -142,19 +207,44 @@ function refreshMarkers(filteredLocations) {
   }
 }
 
-$(document).ready(function() {
-  //ko.applyBindings(new AppViewModel());
-  //var geocoder = new google.maps.Geocoder();
-  //console.log(document);
-  /*
-  $.getJSON("http://lowjack98.github.io/data/places.json", function(data) {
-    console.log("Json data:");
-    console.log(data);
-    var parsed = JSON.parse(data);
-    console.log(parsed);
-    ko.applyBindings(new AppViewModel());
-      // Now use this data to update your view models,
-      // and Knockout will update your UI automatically
+function getYelpBusinessInfo(business_id) {
+  var d = $.Deferred();
+  function nonce_generate() {
+    return (Math.floor(Math.random() * 1e12).toString());
+  }
+  var yelp_url = 'http://dddapi.yelp.com/v2/business/'+business_id;
+  var parameters = {
+    oauth_consumer_key: YELP_KEY,
+    oauth_token: YELP_TOKEN,
+    oauth_nonce: nonce_generate(),
+    oauth_timestamp: Math.floor(Date.now()/1000),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_version : '1.0',
+    callback: 'cb'
+  };
+  var encodedSignature = oauthSignature.generate('GET',yelp_url, parameters, YELP_KEY_SECRET, YELP_TOKEN_SECRET);
+  parameters.oauth_signature = encodedSignature;
+  var yelpCall = $.ajax({
+    url: yelp_url,
+    data: parameters,
+    cache: true,                // This is crucial to include as well to prevent jQuery from adding on a cache-buster parameter "_=23489489749837", invalidating our oauth-signature
+    dataType: 'jsonp',
+  })
+  .done( function(yelpResults) {
+    yelpResults.status = 'ok';
+    console.log(yelpResults);
+    d.resolve(yelpResults);
+  })
+  .fail(function(xhr, status, error) {
+    yelpResults = {};
+    yelpResults.status = 'error';
+    yelpResults.error = error;
+    yelpResults.error_msg = xhr.status;
+    d.reject(yelpResults);
   });
-  */
-});
+  return d.promise();
+}
+
+function noBuenoGoogle(){
+  alert("Unable to reach the Google Maps API. Please check your network connection and try again later.");
+}

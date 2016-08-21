@@ -19,97 +19,96 @@
     <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="bower_components/knockout/dist/knockout.js"></script>
     <script src="bower_components/knockstrap/build/knockstrap.min.js"></script>
-
+    <script src="js/oauth-signature.min.js"></script>
   </head>
 
   <body>
     <nav class="navbar navbar-inverse navbar-fixed-top">
       <div class="container-fluid">
         <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
           <a class="navbar-brand" href="#">Roanoke Ice Cream Guide</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
-          <ul class="nav navbar-nav navbar-right">
-            <li><a href="#">Dashboard</a></li>
-            <li><a href="#">Settings</a></li>
-            <li><a href="#">Profile</a></li>
-            <li><a href="#">Help</a></li>
-          </ul>
-          <form class="navbar-form navbar-right">
-            <input type="text" class="form-control" placeholder="Search...">
-          </form>
         </div>
       </div>
     </nav>
 
     <div class="container-fluid">
       <div class="row">
-        <div class="col-md-2 hidden-xs">
-          <div class="input-group">
-            <span class="input-group-addon" id="basic-addon1">Filter:</span>
-            <input data-bind="value: filterLocs" type="text" class="form-control" placeholder="Filter Locations" aria-describedby="basic-addon1">
+        <div class="col-sm-3">
+          <div class="row">
+            <div class="input-group">
+              <span class="input-group-addon" id="basic-addon1">Filter:</span>
+              <input data-bind="value: filterLocs" type="text" class="form-control" placeholder="Filter Locations" aria-describedby="basic-addon1">
+              <span class="input-group-btn show-after-collapse">
+                <button type="button" class="btn btn-default" onclick="myViewModel.toggleShowShopList();">
+                <span class="glyphicon glyphicon-menu-hamburger" aria-hidden="true"></span></button>
+              </span>
+            </div>
           </div>
-          <button onclick="getCenter();">Go</button>
-          <h4>Ice Cream Shops <i class="ionicons ion-icecream"></i></h4>
-          <ul data-bind="foreach: filteredLocations">
-            <li data-bind="click: $parent.getLocDetails, css: { activelistitem: isActive() }">
-              <span data-bind="text: name"></span>
-            </li>
-          </ul>
+          <div data-bind="visible: showShopList">
+            <h4>Ice Cream Shops <i class="ionicons ion-icecream"></i></h4>
+            <ul data-bind="foreach: filteredLocations">
+              <li data-bind="click: $parent.getLocDetails, css: { activelistitem: isActive() }">
+                <span data-bind="text: name"></span>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div class="col-md-10" style="padding: 0;">
+        <div class="col-sm-9" style="padding: 0;">
           <div id="map"></div>
         </div>
       </div>
     </div>
-    <button class="btn btn-primary" data-bind="click: show">Show modal</button>
-
-    <div class="btn-group form-group" data-toggle="buttons" data-bind="radio: modalSize">
-        <label class="btn btn-default">
-            <input type="radio" name="modalSizing" value="" />
-            None
-        </label>
-        <label class="btn btn-default">
-            <input type="radio" name="modalSizing" value="modal-lg" />
-            Large
-        </label>
-        <label class="btn btn-default">
-            <input type="radio" name="modalSizing" value="modal-sm" />
-            Small
-        </label>
-    </div>
 
     <div data-bind="modal: {
-    visible: modalVisible,
-    dialogCss: 'modal-lg',
-    header: { data: { label: headerLabel } },
-    body: { name: bodyTemplate, data: bodyData },
-    footer: { data: { action: switchTemplates, closeLabel: 'Custom text', primaryLabel: 'Change body template' } }
-}"></div>
-
-<script type="text/html" id="modalTemplate">
-    <p data-bind="text: text"></p>
-    <p data-bind="text: simpleLabel"></p>
-</script>
-<!--
+      visible: modalVisible,
+      header: { name: 'modalHeader', data: modalData },
+      body: { name: 'modalBody', data: modalData },
+      footer: { name: 'modalFooter' } }">
     </div>
 
-    <footer class="footer">
-      <div class="container">
-        <p class="text-muted">Place sticky footer content here.</p>
+    <script type="text/html" id="modalHeader">
+      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+      <div class="row">
+        <div class="col-sm-6">
+          <a data-bind="attr:{href: url}"><h3 data-bind="text: name"></h3></a>
+        </div>
+        <div class="col-sm-6">
+          <p class="pull-right"><img data-bind="attr:{src: rating_img_url}" /> Reviews (<span data-bind="text: review_count"></span>)</p>
+        </div>
       </div>
-    </footer>
--->
+    </script>
 
-<script async defer
- src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCXw_dyrr3o4e2Y_B1yCFiYTLSRQAdxqcQ&v=3&callback=initMap">
-</script>
-<script src="js/app.js"></script>
+    <script type="text/html" id="modalBody">
+      <div class="row">
+        <div class="col-sm-3">
+          <img data-bind="attr:{src: image_url}">
+        </div>
+        <div class="col-sm-9">
+          <p><strong>Phone:</strong> <span data-bind="text: display_phone"></span></p>
+          <p><strong>Address:</strong> <span data-bind="text: address"></span></p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          <p><strong>Last Comment:</strong> <span data-bind="text: snippet_text"></span></p>
+        </div>
+      </div>
+    </script>
+
+    <script type="text/html" id="modalFooter">
+      <div class="row">
+        <div class="col-sm-6">
+          <a href="http://www.yelp.com" class="pull-left"><img height="34px" src="images/yelp_powered_btn_dark@2x.png"></a>
+        </div>
+        <div class="col-sm-6">
+          <button type="button" class="btn btn-secondary pull-right" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </script>
+
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCXw_dyrr3o4e2Y_B1yCFiYTLSRQAdxqcQ&v=3&callback=initMap" onerror="noBuenoGoogle();">
+    </script>
+    <script src="js/app.js"></script>
   </body>
 </html>
