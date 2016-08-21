@@ -15,7 +15,6 @@ var AppViewModel = function(jsonData) {
   self.showShopList = ko.observable(true);
   //function to toggle showShopList
   self.toggleShowShopList = function() {
-    console.log(self.showShopList());
     if(self.showShopList()) {
       self.showShopList(false);
     } else {
@@ -56,8 +55,6 @@ var AppViewModel = function(jsonData) {
 
   //This function updates the yelp details modal
   self.updateModalData = function(loc) {
-    console.log('updating modalData');
-    console.log(loc);
     var md = self.modalData;
     md.text = 'First template';
     md.label('Observable label');
@@ -110,7 +107,6 @@ var AppViewModel = function(jsonData) {
       }
     }
     activeMarker(loc.place_id());
-
     loc.isActive(true);
     var yelpData = getYelpBusinessInfo(loc.yelp_id());
     yelpData.done(function(results){
@@ -147,14 +143,15 @@ function initMap() {
   // Constructor creates a new map - only center and zoom are required.
   var places = $.getJSON( "http://lowjack98.github.io/data/places.json?")
   .done(function(jsonData) {
+    //initialize VM with json location data
     myViewModel = new AppViewModel(jsonData);
     ko.applyBindings(myViewModel);
+    //initialize map
     map = new google.maps.Map(document.getElementById('map'), {
       center: {lat: 33.0039673, lng: -97.2257894},
       zoom: 11
     });
-    //var largeInfowindow = new google.maps.InfoWindow();
-    //initMarkers(myViewModel.creameryLocations(), largeInfowindow);
+    // create markers using VM array of locations
     initMarkers(myViewModel.creameryLocations());
   })
   .fail(function(error) {
@@ -174,7 +171,6 @@ function activeMarker(place_id) {
   }
 }
 // This function loops thru the markers array and sets the correct marker to animate/bounce
-//function initMarkers(arrMarkers, infoWindow) {
 function initMarkers(arrMarkers) {
   $.each( arrMarkers, function( key, value ) {
     var marker = new google.maps.Marker({
@@ -184,15 +180,16 @@ function initMarkers(arrMarkers) {
       cat_icon: value.icon(),
       title: value.name()
     });
+    //add listener so we know when the user clicks on a marker
     marker.addListener('click', function() {
       map.setCenter(this.getPosition());
-      var loc = myViewModel.getLocByPlaceId(this.place_id)
+      var loc = myViewModel.getLocByPlaceId(this.place_id);
       myViewModel.getLocDetails(loc);
     });
     markers.push(marker);
   });
 }
-
+// This function loops thru the entire locations array and shows or hides them based on what was filtered
 function refreshMarkers(filteredLocations) {
   var visPlaces = [];
   for (var i = 0, len = filteredLocations.length; i < len; i++) {
@@ -206,13 +203,13 @@ function refreshMarkers(filteredLocations) {
     }
   }
 }
-
+//This function call the yepl api for business data
 function getYelpBusinessInfo(business_id) {
   var d = $.Deferred();
   function nonce_generate() {
     return (Math.floor(Math.random() * 1e12).toString());
   }
-  var yelp_url = 'http://dddapi.yelp.com/v2/business/'+business_id;
+  var yelp_url = 'http://api.yelp.com/v2/business/'+business_id;
   var parameters = {
     oauth_consumer_key: YELP_KEY,
     oauth_token: YELP_TOKEN,
@@ -227,7 +224,7 @@ function getYelpBusinessInfo(business_id) {
   var yelpCall = $.ajax({
     url: yelp_url,
     data: parameters,
-    cache: true,                // This is crucial to include as well to prevent jQuery from adding on a cache-buster parameter "_=23489489749837", invalidating our oauth-signature
+    cache: true,
     dataType: 'jsonp',
   })
   .done( function(yelpResults) {
@@ -244,7 +241,7 @@ function getYelpBusinessInfo(business_id) {
   });
   return d.promise();
 }
-
+//This function is call when the google api is unable to be reached.
 function noBuenoGoogle(){
   alert("Unable to reach the Google Maps API. Please check your network connection and try again later.");
 }
