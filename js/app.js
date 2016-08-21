@@ -229,7 +229,6 @@ function getYelpBusinessInfo(business_id) {
   })
   .done( function(yelpResults) {
     yelpResults.status = 'ok';
-    console.log(yelpResults);
     d.resolve(yelpResults);
   })
   .fail(function(xhr, status, error) {
